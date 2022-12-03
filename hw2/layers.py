@@ -316,7 +316,15 @@ class CrossEntropyLoss(Layer):
         # TODO: Compute the cross entropy loss using the last formula from the
         #  notebook (i.e. directly using the class scores).
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        indices = torch.unsqueeze(y, 0)
+        indices = torch.transpose(torch.cat((indices, indices), 0), 1, 0)
+        x_y = torch.gather(x, 1, indices)[..., 0]
+
+        x_exp = torch.exp(x)
+        self.grad_cache["x_exp"] = x_exp
+        x_sum = torch.sum(x_exp, 1)
+        self.grad_cache["x_sum"] = x_sum
+        loss = (-x_y+torch.log(x_sum)).mean()
         # ========================
 
         self.grad_cache["x"] = x
@@ -331,11 +339,20 @@ class CrossEntropyLoss(Layer):
         """
         x = self.grad_cache["x"]
         y = self.grad_cache["y"]
+        x_exp = self.grad_cache["x_exp"]
+        x_sum = self.grad_cache["x_sum"]
         N = x.shape[0]
 
         # TODO: Calculate the gradient w.r.t. the input x.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        with torch.autograd.no_grad():
+            log_part = (x_exp.T/x_sum).T
+            index = torch.tensor([list(y)])
+            index = index.T
+            zeros = torch.zeros_like(x, dtype = log_part.dtype)
+            src = -torch.ones_like(x, dtype = log_part.dtype)
+            dx = log_part + zeros.scatter_(1, index, src, reduce='add')
+            dx = dx/N
         # ========================
 
         return dx
@@ -394,7 +411,9 @@ class Sequential(Layer):
         # TODO: Implement the forward pass by passing each layer's output
         #  as the input of the next.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = x
+        for i, layer in enumerate(self.layers):
+            out = layer.forward(out, **kw)
         # ========================
 
         return out
@@ -406,7 +425,9 @@ class Sequential(Layer):
         #  Each layer's input gradient should be the previous layer's output
         #  gradient. Behold the backpropagation algorithm in action!
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        din = dout
+        for i, layer in enumerate(reversed(self.layers)):
+            din = layer.backward(din)
         # ========================
 
         return din
@@ -416,7 +437,8 @@ class Sequential(Layer):
 
         # TODO: Return the parameter tuples from all layers.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        for layer in self.layers:
+            params = params+layer.params()
         # ========================
 
         return params
@@ -474,7 +496,15 @@ class MLP(Layer):
 
         # TODO: Build the MLP architecture as described.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        activations = {'sigmoid': Sigmoid,
+                       'relu': ReLU}
+        activation = activations[activation]
+        in_size = in_features
+        for out_size in hidden_features:
+            layers.append(Linear(in_size, out_size))
+            layers.append(activation())
+            in_size = out_size
+        layers.append(Linear(in_size, num_classes))
         # ========================
 
         self.sequence = Sequential(*layers)
