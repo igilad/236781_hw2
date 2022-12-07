@@ -116,7 +116,7 @@ class ReLU(LeakyReLU):
 
     def __init__(self):
         # ====== YOUR CODE: ======
-        super().__init__(alpha = 0)
+        super().__init__(alpha=0)
         # ========================
 
     def __repr__(self):
@@ -253,7 +253,8 @@ class Linear(Layer):
 
         # TODO: Compute the affine transform
         # ====== YOUR CODE: ======
-        out = x@self.w.T + self.b
+        x_flat = x.view(x.shape[0], -1)
+        out = x_flat@self.w.T + self.b
         # ========================
 
         self.grad_cache["x"] = x
@@ -265,6 +266,7 @@ class Linear(Layer):
         :return: Gradient with respect to layer input, shape (N, Din)
         """
         x = self.grad_cache["x"]
+        x_flat = x.view(x.shape[0], -1)
 
         # TODO: Compute
         #   - dx, the gradient of the loss with respect to x
@@ -274,11 +276,11 @@ class Linear(Layer):
         # ====== YOUR CODE: ======
         with torch.autograd.no_grad():
             dx = dout@self.w
-            self.dw = self.dw+dout.T@x
+            self.dw = self.dw+dout.T@x_flat
             self.db = self.db+torch.sum(dout , 0)
         # ========================
 
-        return dx
+        return dx.view(x.shape)
 
     def __repr__(self):
         return f"Linear({self.in_features=}, {self.out_features=})"
@@ -376,7 +378,13 @@ class Dropout(Layer):
         #  Notice that contrary to previous layers, this layer behaves
         #  differently a according to the current training_mode (train/test).
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        if self.training_mode:
+            probs = (1-self.p)*torch.ones_like(x)
+            mask = torch.bernoulli(probs)
+            out = x*mask
+            self.grad_cache['mask'] = mask
+        else:
+            out = x*(1-self.p)
         # ========================
 
         return out
@@ -384,7 +392,12 @@ class Dropout(Layer):
     def backward(self, dout):
         # TODO: Implement the dropout backward pass.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        if self.training_mode:
+            mask = self.grad_cache['mask']
+            dx = dout * mask
+        else:
+            dx = dout*(1-self.p)
+
         # ========================
 
         return dx
@@ -438,7 +451,7 @@ class Sequential(Layer):
         # TODO: Return the parameter tuples from all layers.
         # ====== YOUR CODE: ======
         for layer in self.layers:
-            params = params+layer.params()
+            params += layer.params()
         # ========================
 
         return params
@@ -503,6 +516,8 @@ class MLP(Layer):
         for out_size in hidden_features:
             layers.append(Linear(in_size, out_size))
             layers.append(activation())
+            if dropout > 0:
+                layers.append(Dropout(dropout))
             in_size = out_size
         layers.append(Linear(in_size, num_classes))
         # ========================

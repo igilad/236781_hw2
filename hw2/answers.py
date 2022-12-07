@@ -40,10 +40,10 @@ An equation: $e^{i\pi} -1 = 0$
 
 
 def part2_overfit_hp():
-    wstd, lr, reg = 0, 0, 0
+    wstd, lr, reg = 1, 0.05, 0
     # TODO: Tweak the hyperparameters until you overfit the small dataset.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    #raise NotImplementedError()
     # ========================
     return dict(wstd=wstd, lr=lr, reg=reg)
 
@@ -60,7 +60,16 @@ def part2_optim_hp():
     # TODO: Tweak the hyperparameters to get the best results you can.
     # You may want to use different learning rates for each optimizer.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    lr_vanilla = 0.03
+    lr_momentum = 0.003
+    lr_rmsprop = 0.00021544346900318823  #There is a truly marvelous way to derive this value but this comment is too small to contain it.
+    wstd = 0.2
+    reg = 0.001584893192461114
+    '''lr_vanilla = 0.02
+    lr_momentum = 0.002
+    lr_rmsprop = 0.0002
+    wstd = 0.2
+    reg = 0.002'''
     # ========================
     return dict(
         wstd=wstd,
@@ -79,7 +88,8 @@ def part2_dropout_hp():
     # TODO: Tweak the hyperparameters to get the model to overfit without
     # dropout.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    wstd = 0.2
+    lr = 0.002
     # ========================
     return dict(wstd=wstd, lr=lr)
 
