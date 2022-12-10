@@ -1,3 +1,4 @@
+import sklearn.metrics
 import torch
 import matplotlib.pyplot as plt
 from abc import ABC, abstractmethod
@@ -22,7 +23,7 @@ class Classifier(nn.Module, ABC):
 
         # TODO: Add any additional initializations here, if you need them.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # raise NotImplementedError()
         # ========================
 
     def forward(self, x: Tensor) -> Tensor:
@@ -34,7 +35,7 @@ class Classifier(nn.Module, ABC):
 
         # TODO: Implement the forward pass, returning raw scores from the wrapped model.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        z = self.model(x)
         # ========================
         assert z.shape[0] == x.shape[0] and z.ndim == 2, "raw scores should be (N, C)"
         return z
@@ -47,7 +48,7 @@ class Classifier(nn.Module, ABC):
         """
         # TODO: Calcualtes class scores for each sample.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        z = self.forward(x)
         # ========================
         return self.predict_proba_scores(z)
 
@@ -59,7 +60,7 @@ class Classifier(nn.Module, ABC):
         """
         # TODO: Calculate class probabilities for the input.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        return nn.Softmax(dim=1)(z)
         # ========================
 
     def classify(self, x: Tensor) -> Tensor:
@@ -128,7 +129,12 @@ class BinaryClassifier(Classifier):
         #  greater or equal to the threshold.
         #  Output should be a (N,) integer tensor.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        positive_class = y_proba[:, self.positive_class]
+
+        labels = positive_class > self.threshold
+        labels = labels.to(torch.int)
+
+        return labels
         # ========================
 
 
@@ -177,7 +183,28 @@ def plot_decision_boundary_2d(
     #  plot a contour map.
     x1_grid, x2_grid, y_hat = None, None, None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    x1_min = min(x[:, 0])
+    x1_max = max(x[:, 0])
+    x2_min = min(x[:, 1])
+    x2_max = max(x[:, 1])
+
+    x1_steps = int((x1_max - x1_min) / dx)
+    x2_steps = int((x2_max - x2_min) / dx)
+
+    x1_lerp = torch.linspace(x1_min, x1_max, x1_steps)
+    x2_lerp = torch.linspace(x2_min, x2_max, x2_steps)
+
+    x1_grid, x2_grid = torch.meshgrid(x1_lerp, x2_lerp, indexing = 'xy')
+
+    x1_flat = torch.ravel(x1_grid)
+    x2_flat = torch.ravel(x2_grid)
+
+    x_grid = torch.column_stack((x1_flat, x2_flat))
+    y_grid = classifier.classify(x_grid)
+
+    y_hat = y_grid.view(x1_grid.shape)
+
+
     # ========================
 
     # Plot the decision boundary as a filled contour
@@ -209,9 +236,12 @@ def select_roc_thresh(
     #  Calculate the index of the optimal threshold as optimal_thresh_idx.
     #  Calculate the optimal threshold as optimal_thresh.
     fpr, tpr, thresh = None, None, None
-    optimal_theresh_idx, optimal_thresh = None, None
+    optimal_thresh_idx, optimal_thresh = None, None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    positive_probs = classifier.predict_proba(x)[:, classifier.positive_class]
+    fpr, tpr, thresh = roc_curve(y, positive_probs.detach().numpy())
+    optimal_thresh_idx = torch.argmax(torch.tensor(tpr) - torch.tensor(fpr)).item()
+    optimal_thresh = thresh[optimal_thresh_idx]
     # ========================
 
     if plot:

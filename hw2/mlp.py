@@ -55,7 +55,17 @@ class MLP(nn.Module):
         #  - Either instantiate the activations based on their name or use the provided
         #    instances.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        super().__init__()
+        layers = []
+        cur_in_dim = in_dim
+        for dim, non_lin in zip(dims , nonlins):
+            layers.append(nn.Linear(cur_in_dim, dim))
+            activation = non_lin
+            if non_lin is None or type(non_lin) == str:
+                activation = ACTIVATIONS[non_lin](**ACTIVATION_DEFAULT_KWARGS[non_lin])
+            layers.append(activation)
+            cur_in_dim = dim
+        self.model = nn.Sequential(*layers)
         # ========================
 
     def forward(self, x: Tensor) -> Tensor:
@@ -66,5 +76,5 @@ class MLP(nn.Module):
         # TODO: Implement the model's forward pass. Make sure the input and output
         #  shapes are as expected.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        return self.model.forward(x)
         # ========================

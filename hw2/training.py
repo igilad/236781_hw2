@@ -269,10 +269,23 @@ class ClassifierTrainer(Trainer):
         #  - Update parameters
         #  - Classify and calculate number of correct predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        forward = self.model.forward(X)
+
+        self.optimizer.zero_grad()
+
+        batch_loss = self.loss_fn(forward, y)
+
+        batch_loss.backward()
+
+        self.optimizer.step()
+
+        y_pred = self.model.classify(X)
+
+        acc = y == y_pred
+        num_correct = acc.sum().item()
         # ========================
 
-        return BatchResult(batch_loss, num_correct)
+        return BatchResult(batch_loss.item(), num_correct)
 
     def test_batch(self, batch) -> BatchResult:
         X, y = batch
@@ -289,10 +302,17 @@ class ClassifierTrainer(Trainer):
             #  - Forward pass
             #  - Calculate number of correct predictions
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            forward = self.model.forward(X)
+
+            batch_loss = self.loss_fn(forward, y)
+
+            y_pred = self.model.classify(X)
+
+            acc = y == y_pred
+            num_correct = acc.sum().item()
             # ========================
 
-        return BatchResult(batch_loss, num_correct)
+        return BatchResult(batch_loss.item(), num_correct)
 
 
 class LayerTrainer(Trainer):
