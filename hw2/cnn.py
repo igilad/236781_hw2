@@ -179,14 +179,41 @@ class ResidualBlock(nn.Module):
         #  - Don't create layers which you don't use! This will prevent
         #    correct comparison in the test.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        main_layers = []
+        act = ACTIVATIONS[activation_type](**activation_params)
+        in_channel = in_channels
+
+        for out_channel, kernel_size in zip(channels[:-1], kernel_sizes[:-1]):
+            pad = (kernel_size - 1) // 2
+            conv = nn.Conv2d(in_channel, out_channel, kernel_size, bias=True, padding=pad)
+            drop = nn.Dropout2d(p=dropout)
+            batch_norm = nn.BatchNorm2d(out_channel)
+
+            main_layers += [conv, drop, batch_norm, act]
+
+            in_channel = out_channel
+
+        # (conv -> dropout -> batchnorm -> relu) -> last conv
+        pad = (kernel_sizes[-1] - 1) // 2
+        conv = nn.Conv2d(channels[-2], channels[-1], kernel_sizes[-1], bias=True, padding=pad)
+        main_layers.append(conv)
+        
+        self.main_path = nn.Sequential(*main_layers)
+
+        shortcut_layers = []
+        if in_channels != channels[-1]:
+            shortcut_layers = [nn.Conv2d(in_channels, channels[-1], kernel_size=1, bias=False)]
+
+        self.shortcut_path = nn.Sequential(*shortcut_layers)
         # ========================
 
     def forward(self, x: Tensor):
         # TODO: Implement the forward pass. Save the main and residual path to `out`.
         out: Tensor = None
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        main_out = self.main_path(x)
+        shortcut_out = self.shortcut_path(x)
+        out = main_out + shortcut_out
         # ========================
         out = torch.relu(out)
         return out
@@ -226,8 +253,18 @@ class ResidualBottleneckBlock(ResidualBlock):
         #  Initialize the base class in the right way to produce the bottleneck block
         #  architecture.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
-        # ========================
+        # Add conv layer to reduce feature space *only* if there's a need
+        if inner_channels[0] != in_out_channels:
+            inner_channels = [inner_channels[0]] + inner_channels
+            inner_kernel_sizes = [1] + inner_kernel_sizes
+
+        # Same for output conv layer
+        if inner_channels[-1] != in_out_channels:
+            inner_channels.append(in_out_channels)
+            inner_kernel_sizes.append(1)
+
+        super().__init__(in_out_channels, inner_channels, inner_kernel_sizes, **kwargs)
+    # ========================
 
 
 class ResNet(CNN):
