@@ -80,7 +80,18 @@ class CNN(nn.Module):
         #  Note: If N is not divisible by P, then N mod P additional
         #  CONV->ACTs should exist at the end, without a POOL after them.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        activation = [ACTIVATIONS[self.activation_type](**self.activation_params)]
+        pooling = [POOLINGS[self.pooling_type](**self.pooling_params)]
+
+        l_in_channels = in_channels
+
+        for i in range(int(len(self.channels))):
+            conv = [nn.Conv2d(l_in_channels, out_channels=self.channels[i], **self.conv_params)]
+            l_in_channels = self.channels[i]
+            layers += conv
+            layers += activation
+            if (i+1) % self.pool_every == 0:
+                layers += pooling
 
         # ========================
         seq = nn.Sequential(*layers)
@@ -95,10 +106,13 @@ class CNN(nn.Module):
         rng_state = torch.get_rng_state()
         try:
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            with torch.no_grad():
+                X = torch.ones([1]+list(self.in_size))
+                num_features = self.feature_extractor(X).flatten().shape[0]
             # ========================
         finally:
             torch.set_rng_state(rng_state)
+        return num_features
 
     def _make_mlp(self):
         # TODO:
@@ -109,7 +123,9 @@ class CNN(nn.Module):
         #  - The last Linear layer should have an output dim of out_classes.
         mlp: MLP = None
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        mlp = MLP(self._n_features(),
+                  self.hidden_dims + [self.out_classes],
+                  [ACTIVATIONS[self.activation_type](**self.activation_params) for dim in self.hidden_dims]+["none"])
         # ========================
         return mlp
 
@@ -119,7 +135,8 @@ class CNN(nn.Module):
         #  return class scores.
         out: Tensor = None
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = self.feature_extractor(x)
+        out = self.mlp(out.flatten(start_dim=1))
         # ========================
         return out
 
@@ -309,8 +326,21 @@ class ResNet(CNN):
         #  - Use bottleneck blocks if requested and if the number of input and output
         #    channels match for each group of P convolutions.
         # ====== YOUR CODE: ======
+        activation = [ACTIVATIONS[self.activation_type](**self.activation_params)]
+
+        for out_channel, kernel_size in zip(self.channels, """kernel_sizes"""):
+            conv = [nn.Conv2d(in_channels, out_channels=out_channel, **self.conv_params, kernel_size=kernel_size, bias=True)]
+            in_channels = out_channel
+
+            drop = nn.Dropout2d(p=dropout) #TODO: should I check if dropout>0?
+
+            batch = nn.BatchNorm2d(out_channel)
+
+
+
+
+
         raise NotImplementedError()
         # ========================
         seq = nn.Sequential(*layers)
         return seq
-
