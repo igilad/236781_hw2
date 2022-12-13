@@ -204,9 +204,13 @@ class ResidualBlock(nn.Module):
             pad = (kernel_size - 1) // 2
             conv = nn.Conv2d(in_channel, out_channel, kernel_size, bias=True, padding=pad)
             drop = nn.Dropout2d(p=dropout)
-            batch_norm = nn.BatchNorm2d(out_channel)
 
-            main_layers += [conv, drop, batch_norm, act]
+            main_layers += [conv, drop]
+
+            if batchnorm is True:
+                main_layers.append(nn.BatchNorm2d(out_channel))
+
+            main_layers += [act]
 
             in_channel = out_channel
 
@@ -214,7 +218,7 @@ class ResidualBlock(nn.Module):
         pad = (kernel_sizes[-1] - 1) // 2
         conv = nn.Conv2d(channels[-2], channels[-1], kernel_sizes[-1], bias=True, padding=pad)
         main_layers.append(conv)
-        
+
         self.main_path = nn.Sequential(*main_layers)
 
         shortcut_layers = []
@@ -270,15 +274,8 @@ class ResidualBottleneckBlock(ResidualBlock):
         #  Initialize the base class in the right way to produce the bottleneck block
         #  architecture.
         # ====== YOUR CODE: ======
-        # Add conv layer to reduce feature space *only* if there's a need
-        if inner_channels[0] != in_out_channels:
-            inner_channels = [inner_channels[0]] + inner_channels
-            inner_kernel_sizes = [1] + inner_kernel_sizes
-
-        # Same for output conv layer
-        if inner_channels[-1] != in_out_channels:
-            inner_channels.append(in_out_channels)
-            inner_kernel_sizes.append(1)
+        inner_channels = [inner_channels[0]] + inner_channels + [in_out_channels]
+        inner_kernel_sizes = [1] + inner_kernel_sizes + [1]
 
         super().__init__(in_out_channels, inner_channels, inner_kernel_sizes, **kwargs)
     # ========================
@@ -326,21 +323,38 @@ class ResNet(CNN):
         #  - Use bottleneck blocks if requested and if the number of input and output
         #    channels match for each group of P convolutions.
         # ====== YOUR CODE: ======
-        activation = [ACTIVATIONS[self.activation_type](**self.activation_params)]
+        N = len(self.channels)
+        P = self.pool_every
+        for idx in range(0, N, P):
+            channels_batch = self.channels[idx: min(idx+P, N)]
+            if self.bottleneck and in_channels == channels_batch[-1]:
+                resblock_bn = ResidualBottleneckBlock(
+                    in_out_channels=in_channels,
+                    inner_channels=channels_batch[1:-1],
+                    inner_kernel_sizes=[3]*len(channels_batch[1:-1]),
+                    batchnorm=self.batchnorm,
+                    dropout=self.dropout,
+                    activation_type=self.activation_type,
+                    activation_params=self.activation_params,
+                )
+                layers.append(resblock_bn)
+            else: #ResidualBlock
+                resblock = ResidualBlock(
+                    in_channels=in_channels,
+                    channels=channels_batch,
+                    kernel_sizes=[3]*len(channels_batch),
+                    batchnorm=self.batchnorm,
+                    dropout=self.dropout,
+                    activation_type=self.activation_type,
+                    activation_params=self.activation_params
+                )
+                layers.append(resblock)
 
-        for out_channel, kernel_size in zip(self.channels, """kernel_sizes"""):
-            conv = [nn.Conv2d(in_channels, out_channels=out_channel, **self.conv_params, kernel_size=kernel_size, bias=True)]
-            in_channels = out_channel
+            in_channels = channels_batch[-1]
 
-            drop = nn.Dropout2d(p=dropout) #TODO: should I check if dropout>0?
+            if idx <= len(self.channels) - self.pool_every:
+                layers.append(POOLINGS[self.pooling_type](**self.pooling_params))
 
-            batch = nn.BatchNorm2d(out_channel)
-
-
-
-
-
-        raise NotImplementedError()
         # ========================
         seq = nn.Sequential(*layers)
         return seq
