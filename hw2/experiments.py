@@ -127,14 +127,18 @@ def cnn_experiment(
     in_size = (3, 32, 32)  # CIFAR samples size
     out_classes = 10  # CIFAR out_classes
     channels = [c for c in itertools.chain.from_iterable([f] * layers_per_block for f in filters_per_layer)]
-    pooling_params = dict(kernel_size=2)
-    conv_params = dict(kernel_size=3, padding=1)
+    per_model_params = kw['per_model_params'] if 'per_model_params' in kw else {}
+    # the run will crash without kernel_size argument for pooling and convolution, so we add it if it's not provided
+    if 'pooling_params' not in per_model_params:
+        per_model_params['pooling_params'] = dict(kernel_size=2)
+    if 'conv_params' not in per_model_params:
+        per_model_params['conv_params'] = dict(kernel_size=3, padding=1)
     model = model_cls(in_size=in_size, out_classes=out_classes, channels=channels, pool_every=pool_every,
-                      hidden_dims=hidden_dims)
+                      hidden_dims=hidden_dims, **per_model_params)
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
     classifier = ArgMaxClassifier(model)
-    trainer = ClassifierTrainer(classifier, loss_fn, optimizer, device).to(device)
+    trainer = ClassifierTrainer(classifier, loss_fn, optimizer, device)
     dl_train = DataLoader(ds_train, batch_size=bs_train, shuffle=False) #true?
     dl_test = DataLoader(ds_test, batch_size=bs_test, shuffle=False)
     fit_res = trainer.fit(dl_train=dl_train, dl_test=dl_test, num_epochs=epochs, checkpoints=checkpoints,

@@ -216,7 +216,7 @@ class ResidualBlock(nn.Module):
 
         # (conv -> dropout -> batchnorm -> relu) -> last conv
         pad = (kernel_sizes[-1] - 1) // 2
-        conv = nn.Conv2d(channels[-2], channels[-1], kernel_sizes[-1], bias=True, padding=pad)
+        conv = nn.Conv2d(in_channel, channels[-1], kernel_sizes[-1], bias=True, padding=pad)
         main_layers.append(conv)
 
         self.main_path = nn.Sequential(*main_layers)
