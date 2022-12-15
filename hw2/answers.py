@@ -336,14 +336,22 @@ An equation: $e^{i\pi} -1 = 0$
 part6_q1 = r"""
 **Your answer:**
 
+For the first picture:
+1. The model didn't recognize the dolphins present in the image. Instead of it, it detects a bird and a person.
+2. The reason for this is that "dolphin" is not a possible class for an object in YoloV3 model. It probably detects a 
+bird because of the sky in the background and the black color of the dolphin. The method I would suggest to recognize 
+dolphin in the image would be to add some dolphin images to the dataset, a new dolphin class and retrain the model with
+it. I would also suggest having some shadow images of dolphins or to add an ability to the model to detect some black 
+shadows of objects. (TODO: check with team about black shadow, not sure if it's necessary to talk about it)
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+For the second picture:
+1. The model detected the objects almost right. In right side, it detects two dogs and draw the relevant bounding boxes
+around them. In left side, it detects a cat, which is present in the image, but draw the bounding box mainly on the
+third dog present left and not around the cat. So it missed the right bounding box around the cat and the detection of
+the third dog.
+2. I would say that the reason why the models didn't detects well the object on right is because the image is cluttered,
+there is a lot of objects and it's difficult for the model to detect each one of them.
+(TODO: check this with team too)
 """
 
 
