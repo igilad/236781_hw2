@@ -124,7 +124,21 @@ def cnn_experiment(
     #   for you automatically.
     fit_res = None
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    in_size = (3, 32, 32)  # CIFAR samples size
+    out_classes = 10  # CIFAR out_classes
+    channels = [c for c in itertools.chain.from_iterable([f] * layers_per_block for f in filters_per_layer)]
+    pooling_params = dict(kernel_size=2)
+    conv_params = dict(kernel_size=3, padding=1)
+    model = model_cls(in_size=in_size, out_classes=out_classes, channels=channels, pool_every=pool_every,
+                      hidden_dims=hidden_dims)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
+    classifier = ArgMaxClassifier(model)
+    trainer = ClassifierTrainer(classifier, loss_fn, optimizer, device).to(device)
+    dl_train = DataLoader(ds_train, batch_size=bs_train, shuffle=False) #true?
+    dl_test = DataLoader(ds_test, batch_size=bs_test, shuffle=False)
+    fit_res = trainer.fit(dl_train=dl_train, dl_test=dl_test, num_epochs=epochs, checkpoints=checkpoints,
+                          early_stopping=early_stopping, max_batches=batches)
     # ========================
 
     save_experiment(run_name, out_dir, cfg, fit_res)
