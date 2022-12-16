@@ -341,8 +341,7 @@ For the first picture:
 2. The reason for this is that "dolphin" is not a possible class for an object in YoloV3 model. It probably detects a 
 bird because of the sky in the background and the black color of the dolphin. The method I would suggest to recognize 
 dolphin in the image would be to add some dolphin images to the dataset, a new dolphin class and retrain the model with
-it. I would also suggest having some shadow images of dolphins or to add an ability to the model to detect some black 
-shadows of objects. (TODO: check with team about black shadow, not sure if it's necessary to talk about it)
+it. I would also suggest having some shadow images of dolphins in the new dataset to be able to recognize them.
 
 For the second picture:
 1. The model detected the objects almost right. In right side, it detects two dogs and draw the relevant bounding boxes
@@ -351,7 +350,7 @@ third dog present left and not around the cat. So it missed the right bounding b
 the third dog.
 2. I would say that the reason why the models didn't detects well the object on right is because the image is cluttered,
 there is a lot of objects and it's difficult for the model to detect each one of them.
-(TODO: check this with team too)
+(TODO: check this with team)
 """
 
 
@@ -371,14 +370,17 @@ An equation: $e^{i\pi} -1 = 0$
 
 part6_q3 = r"""
 **Your answer:**
-
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The model didn't detect well the images.
+For the first one, the model detected a cup instead of a bottle. It's because of the lighting condition, we have a low 
+light (I needed to shut down the light in the room :)) and maybe also because of the clutter in the background
+(multiple objects to detect in a small area).
+For the second image, the model didn't detect the hair drier because of the occlusion. The hair drier is cut in half,
+we, humans, easily understand this is a hair drier within the context and the clurry image in the mirror, but it's not 
+that easy for the model.
+For the third image, the model didn't recognized all the apples in the air because there is a lot of them to detect and 
+it's not obvious there should be apple in the air. It detects some apple clustered together on the table and in the
+floor box but there is a lot of missing. I think the reason for this is that there is too much object to detect in this
+image.
 
 """
 
