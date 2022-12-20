@@ -12,12 +12,7 @@ part1_q1 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -25,12 +20,7 @@ part1_q2 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -98,12 +88,7 @@ part2_q1 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -111,12 +96,7 @@ part2_q2 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -124,12 +104,7 @@ part2_q3 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -185,12 +160,7 @@ part3_q1 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -198,12 +168,7 @@ part3_q2 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -211,12 +176,7 @@ part3_q3 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -225,12 +185,7 @@ part3_q4 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 # ==============
@@ -258,14 +213,72 @@ def part4_optim_hp():
 part4_q1 = r"""
 **Your answer:**
 
+**1-**
+**Vanilla resnet block**
+after each convolution we have (channels-out * ((channels_in * width * height) + 1) parameters.
+$K \cdot (C_in \cdot F^2 + 1)$
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+Thus
+First convolution:
+Parameters = $256 \cdot ((256 \cdot 3 \cdot 3) + 1) = 590,080 $
+   
+Second convolution:
+Parameters = $256 \cdot ((256 \cdot 3 \cdot 3) + 1) = 590,080 $
+   
+Total parameters = 590,080 $\cdot$ 2 = 1,180,160
+   
+*BottleNeck block*
+First convolution:
+parameters = $64 \cdot ((256 \cdot 1 \cdot 1) + 1) = 16,448 $
+   
+Second convolution:
+parameters = $64 \cdot ((64 \cdot 3 \cdot 3) + 1) = 36,928 $
+   
+Third convolution:
+parameters = $256 \cdot ((64 \cdot 1 \cdot 1) + 1) = 16,640 $
+   
+Total parameters = 16,448 + 36,928 + 16,640 = 70,016 
+   
+We can see that in bottleneck there are fewer parameters
 
+**2-**
+TODO--------------------------------------------------------------------------------------
+should we include bias? ($C_{in}\times (k^2 + 1)$)
+------------------------------------------------------------------------------------------
+For each filter, for each stride we have $C_{in}\times k^2$ multiplication operations $C_{in}\times (k^2 -1)$ addition operations and 1 bias adding operation.
+Therefore we have $2\times C_{in}\times k^2$ operations per filter $\cdot$ stride.
+We have $H\times W$ strides, so we have  $2\times C_{in}\times k^2\times C_{out}\times H\times W$  operations per layer. 
+For each layer we denote the number of params $P_l = C_{in}\times k^2\times C_{out}$  
+Thus, the number of floating point operations for each layer is  $2\times P_l\times H\times W$
+
+shortcut connections require $C_{out}\times H \times W$ Addition operations
+
+
+To conclude the final equation of floating point operations would be:
+floating point operations = $C_{out}\times H \times W +\sum_{l\in layers} 2\times P_l\times H \times W$
+Using dimension preserving padding, we get constant HxW thus we can simplify:
+floating point operations = $C_{out}\times H \times W +2\times H \times W\sum_{l\in layers}P_l$
+floating point operations = $H \times W(C_{out} + 2\times\sum_{l\in layers}P_l)$
+denoting $P_b$ as number of parameters in block we get
+floating point operations = $H \times W(C_{out} + 2\times P_b)$
+
+In vanilla block we have floating point operations = $H \times W(256+2\times 1,180,160) = 2,360,576\times H\times W$
+In the bottleneck block we have floating point operations = $H\times W (256+2\times 70,016) =  H\times W \times 140,288 $
+
+We can see that bottleneck requires much less floating point operations to compute an output
+
+**3-** 
+Spatial - 
+    regular block - we use two convolution layers of 3x3 thus we get respective field of 5x5.
+    bottleneck block -  we use two convolution layers of 1x1 and one convolution layer of 3x3 thus we get
+        respective field of 3x3.
+   
+We see that vanilla block combines the input better in terms of spatial.
+   
+   
+Across feature map-   
+   In bottleneck block not all inputs has the same influence across feature map, that because we project the first layer to a smaller dimension
+   In vanilla block we don't project the input (therefore we have the same influence)
 """
 
 # ==============
@@ -277,52 +290,39 @@ An equation: $e^{i\pi} -1 = 0$
 part5_q1 = r"""
 **Your answer:**
 
+1. We got the best accuracy by using L=4.
+We see that when using L=2 and L=4 the results are almost the same.
+As we learned in class - deeper network (with more layers) are more complex and can fit better to general data (up to a certen level, where we get overfit)
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+2. The network was untrainable for depths 8 and 16 - the largest depths. 
+We think that happened because of vanishing gradients - the info flowing in the network passed a lot of loss layers, and it makes the gradient zero.
 """
 
 part5_q2 = r"""
 **Your answer:**
+When looking at both 1.1 and 1.2 experiments - we can see that both networks aren't trainable with L=8 due to vanishing gradients.
+We also see that with L=4 we get better test accuracy for every K tested. Which suitable for what we got in experiment 1.1
+
+We see that for L=4 for more filters per layers we got better test accuracy whereas for L=2 the fewer filters per layer (on number tested) get better test accuracy.
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
 part5_q3 = r"""
 **Your answer:**
+We can see that for L=4 - we got vanishing gradients and the network was untrainable.
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
-
+As we saw in the previous experiments for a fixed k we get better test accuracy for higher amount of layers,
+but we can also see that after adding too much architecture complexity, the networks can be unstable and become untrainable.
 """
 
 part5_q4 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -359,12 +359,7 @@ part6_q2 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """
 
@@ -372,13 +367,22 @@ An equation: $e^{i\pi} -1 = 0$
 part6_q3 = r"""
 **Your answer:**
 
+For the first picture - Illumination conditions:
+The model detects the bottle present in the image as a cup.
+Although 'bottle' is in the classes names, the model detects it as a cup.
+The reason for this is the darkness of the image (Illumination conditions).
+Yet,it identifies the tv monitor, keyboard and mouse correctly. 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+For the second picture - Occlusion:
+The model didn't detect the 'hair drier' in the picture even though it is in the classes names.
+We believe that the reason is because it's cut in the image, and partially occlude, and thus missing important features.
+
+For the third picture - Cluttering:
+Crowded or Cluttered Scenario: Too many objects in the image make it extremely crowded.
+We can see that the model can detect apples but it didnt detect all the apples.
+Also, it was able to detect other objects. 
+
+
 
 """
 
@@ -386,11 +390,6 @@ part6_bonus = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+
 
 """

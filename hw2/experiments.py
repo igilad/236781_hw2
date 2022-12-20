@@ -68,7 +68,7 @@ def mlp_experiment(
 
 
 def cnn_experiment(
-    run_name,
+run_name,
     out_dir="./results",
     seed=None,
     device=None,
@@ -77,7 +77,7 @@ def cnn_experiment(
     bs_test=None,
     batches=100,
     epochs=100,
-    early_stopping=3,
+    early_stopping=8,
     checkpoints=None,
     lr=1e-3,
     reg=1e-3,
@@ -88,7 +88,33 @@ def cnn_experiment(
     hidden_dims=[1024],
     model_type="cnn",
     # You can add extra configuration for your experiments here
+    conv_params=None,  # can be an input
+    pooling_params=None,  # can be an input
     **kw,
+
+    # run_name,
+    # out_dir="./results",
+    # seed=None,
+    # device=None,
+    # # Training params
+    # bs_train=128,
+    # bs_test=None,
+    # batches=100,
+    # epochs=100,
+    # early_stopping=3,
+    # checkpoints=None,
+    # lr=1e-3, #3e-2,
+    # reg=1e-3, #5e-3,
+    # # Model params
+    # filters_per_layer=[64],
+    # layers_per_block=2,
+    # pool_every=2,
+    # hidden_dims=[1024],
+    # model_type="cnn",
+    # # You can add extra configuration for your experiments here
+    # conv_params=None,  # can be an input
+    # pooling_params=None,  # can be an input
+    # **kw,
 ):
     """
     Executes a single run of a Part3 experiment with a single configuration.
@@ -124,23 +150,91 @@ def cnn_experiment(
     #   for you automatically.
     fit_res = None
     # ====== YOUR CODE: ======
-    in_size = (3, 32, 32)  # CIFAR samples size
-    out_classes = 10  # CIFAR out_classes
+    """
+    out_classes = 10  # CIFAR-10 out_classes
+
+    dl_train = DataLoader(ds_train, bs_train, shuffle=True)
+    dl_test = DataLoader(ds_test, bs_test, shuffle=False)
+
+    channels = [[num_filters] * layers_per_block for num_filters in filters_per_layer]
+    channels = sum(channels, [])  # converting channels from 2d to 1d
+
+    conv_params = dict(kernel_size=3, stride=1, padding=1) if conv_params is None else conv_params # can be an input
+    pooling_params = dict(kernel_size=2) if pooling_params is None else pooling_params # can be an input
+
+    model = model_cls(
+        in_size=,
+        out_classes=out_classes,
+        channels=channels,
+        pool_every=pool_every,
+        hidden_dims=hidden_dims,
+        conv_params=conv_params,
+        pooling_params=pooling_params,
+    )
+
+    classifier = ArgMaxClassifier(model)
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optim_params = dict(dict(lr=lr, weight_decay=reg, momentum=0.5))
+
+    # optimizer = torch.optim.SGD(params=model.parameters(), nesterov=True, **optim_params)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
+    trainer = ClassifierTrainer(classifier, loss_fn, optimizer, device)
+    fit_res = trainer.fit(dl_train=dl_train, dl_test=dl_test, num_epochs=epochs, checkpoints=checkpoints,
+                          early_stopping=early_stopping, max_batches=batches)
+    """
+
+    """
+    out_classes = 10  # CIFAR-10 out_classes
+
+    
+
+    channels = [[num_filters] * layers_per_block for num_filters in filters_per_layer]
+    channels = sum(channels, [])  # converting channels from 2d to 1d
+
+    conv_params = dict(kernel_size=3, stride=1, padding=1) if conv_params is None else conv_params # can be an input
+    pooling_params = dict(kernel_size=2) if pooling_params is None else pooling_params # can be an input
+
+    model = model_cls(
+        in_size=ds_train[0][0].shape,
+        out_classes=out_classes,
+        channels=channels,
+        pool_every=pool_every,
+        hidden_dims=hidden_dims,
+        conv_params=conv_params,
+        pooling_params=pooling_params,
+    )
+
+    classifier = ArgMaxClassifier(model)
+
+    loss_fn = torch.nn.CrossEntropyLoss()
+    optim_params = dict(dict(lr=lr, weight_decay=reg, momentum=0.5))
+
+    # optimizer = torch.optim.SGD(params=model.parameters(), nesterov=True, **optim_params)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
+    trainer = ClassifierTrainer(classifier, loss_fn, optimizer, device)
+    fit_res = trainer.fit(dl_train=dl_train, dl_test=dl_test, num_epochs=epochs, checkpoints=checkpoints,
+                          early_stopping=early_stopping, max_batches=batches)
+    """
+    in_size = ds_train[0][0].shape  # CIFAR samples size
+    out_classes = 10  # CIFAR 10 out_classes
     channels = [c for c in itertools.chain.from_iterable([f] * layers_per_block for f in filters_per_layer)]
-    per_model_params = kw['per_model_params'] if 'per_model_params' in kw else {}
-    # the run will crash without kernel_size argument for pooling and convolution, so we add it if it's not provided
-    if 'pooling_params' not in per_model_params:
-        per_model_params['pooling_params'] = dict(kernel_size=2)
-    if 'conv_params' not in per_model_params:
-        per_model_params['conv_params'] = dict(kernel_size=3, padding=1)
-    model = model_cls(in_size=in_size, out_classes=out_classes, channels=channels, pool_every=pool_every,
-                      hidden_dims=hidden_dims, **per_model_params)
+    conv_params = dict(kernel_size=3, padding=1) if conv_params is None else conv_params  # can be an input
+    pooling_params = dict(kernel_size=2) if pooling_params is None else pooling_params  # can be an input
+
+    model = model_cls(in_size=in_size,
+                      out_classes=out_classes,
+                      channels=channels,
+                      pool_every=pool_every,
+                      hidden_dims=hidden_dims,
+                      conv_params = conv_params,
+                      pooling_params=pooling_params)
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
-    classifier = ArgMaxClassifier(model)
+    classifier = ArgMaxClassifier(model).to(device)
     trainer = ClassifierTrainer(classifier, loss_fn, optimizer, device)
-    dl_train = DataLoader(ds_train, batch_size=bs_train, shuffle=False) #true?
-    dl_test = DataLoader(ds_test, batch_size=bs_test, shuffle=False)
+    dl_train = DataLoader(ds_train, bs_train, shuffle=True)
+    dl_test = DataLoader(ds_test, bs_test, shuffle=False)
     fit_res = trainer.fit(dl_train=dl_train, dl_test=dl_test, num_epochs=epochs, checkpoints=checkpoints,
                           early_stopping=early_stopping, max_batches=batches)
     # ========================
