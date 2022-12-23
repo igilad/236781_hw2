@@ -10,6 +10,25 @@ math (delimited with $$).
 
 part1_q1 = r"""
 **Your answer:**
+1.) A) The Jacobian tensor will contain the derivative of every member of the output matrix with respect to every member of the input matrix.
+    The output matrix is of shape (64,1024) and the input matrix is of shape (64,512).
+    Hence the Jacobian will be a 4d tensor of shape (64,1024)x(64,512).
+    B)$y_{i,j} = \sigma(w_{i,1}x_{1,j} + ... + w_{i,n}x_{n,j})$
+    Hence we get that $\frac{\partial y_{i,j}}{\partial x_{a,b}} = w_{b,j}$ if a = i and 0 otherwise.
+    This means that only around $\frac{1}{n}$ of the entries of the jacobian are non-zero which makes it sparse.
+    C) No we do not have to materialize the above Jacobian:
+    By the chain rule we get that $\delta\mat{X} = \pderiv{L}{\mat{Y}}*\pderiv{\mat{Y}}{\mat{X}} = \pderiv{L}{\mat{Y}}*\pderiv{\mat{X}\mat{W}^{T}}{\mat{X}} = \pderiv{L}{\mat{Y}}*\mat{W}^{T}$.
+    This only requires matrix multiplication and so we never have to calculate the Jacobian.
+    
+2.) A) The Jacobian tensor will contain the derivative of every member of the output matrix with respect to every member of the input matrix.
+    The output matrix is of shape (512,1024) and the input matrix is of shape (64,512).
+    Hence the Jacobian will be a 4d tensor of shape (512,1024)x(64,512).
+    B)$y_{i,j} = \sigma(w_{i,1}x_{1,j} + ... + w_{i,n}x_{n,j})$
+    Hence we get that $\frac{\partial y_{i,j}}{\partial w_{a,b}} = x_{i,a}$ if b = j and 0 otherwise.
+    This means that only around $\frac{1}{n}$ of the entries of the jacobian are non-zero which makes it sparse.
+    C) No we do not have to materialize the above Jacobian:
+    By the chain rule we get that $\delta\mat{W} = \pderiv{L}{\mat{Y}}*\pderiv{\mat{Y}}{\mat{W}} = \pderiv{L}{\mat{Y}}*\pderiv{\mat{X}\mat{W}^{T}}{\mat{W}} = \pderiv{L}{\mat{Y}}*\mat{X}^{T}$.
+    This only requires matrix multiplication and so we never have to calculate the Jacobian.
 
 
 
@@ -18,7 +37,13 @@ part1_q1 = r"""
 
 part1_q2 = r"""
 **Your answer:**
+No, it is not required.
+Back propogation is a method that allows to accelerate the computation of gradients by computing them efficiently.
+As we discussed in the previous question the intermediate gradients of the chain rule are 4D tensors and so we can just 
+multiply these tensors according to the chain rule and obtain the required gradients without backpropogation.
 
+Additionally there is a subfield of learning which focuses on descent based approaches without derivatives at all.
+A great example of this is genetic algorithms, which manage optimize functions in a descent-like way without those functions being differentiable.
 
 
 
@@ -86,15 +111,23 @@ def part2_dropout_hp():
 
 part2_q1 = r"""
 **Your answer:**
-
-
-
+1.) We think of the dropout mechanic as a form of regularization and so we would expect a low value to yield a case of overfitting and a high value to yield a case of underfitting.
+    The graphs match our expectations since we see that for low values like 0 we get an extreme case of overfitting and for high values like 0.8 we get an extreme case of underfitting.
+2.) The low dropout setting achieves the better train results but worse test results than the high setting.
+    We expected this to happen since low values mean overfitting and high values mean underfitting.
 
 """
 
 part2_q2 = r"""
 **Your answer:**
-
+Yes, it is possible for both loss and accuracy to increase at the same time since accuracy only depends on the sample 
+with the highest score while the loss depends on the entire distribution.
+Because of this, if we assume that the dataset has 2 samples: one with label 0 and one with label 1 and that in one epoch, the model
+returns the scores 0: 0.49 1: 0.51 and 0:0 1:1 for inputs 0,1 respectively.
+We get that the avg loss of this epoch is ~ 0.51 and the accuracy is 50%.
+Now if the model returns the scores 0: 0.51 1: 0.49 and 0: 0.49 1: 0.51 for inputs 0,1 respectively.
+We get that the avg loss of this epoch is ~ 0.97 and the accuracy is 100%.
+We see that both loss and accuracy increased as desired.
 
 
 
@@ -102,7 +135,33 @@ part2_q2 = r"""
 
 part2_q3 = r"""
 **Your answer:**
+1.) Gradient descent is a method of optimization which minimizes the value of a function by taking small steps in the opposite direction of its gradient.
+    As we saw before back-propagation is not required for this calculation and so this method would still work independently from it.
+    Back-propagation is an efficient way to calculate the gradients of a network which relies on the chain rule.
+    This method can be used with any descent based optimizers and not just GD.
+    
+2.) The main difference between GD and SGD is the way the gradients are calculated:
+    In GD the gradients are calculated on the entire dataset while in SGD the gradient is only calculated on a single sample or a small batch of samples.
+    This difference heavily affects the training process in the following ways:
+    a) Loading the entire dataset into memory is often infeasible and so GD is often impossible to use while SGD is still pracical on the same problem.
+    b) Using the entire dataset to calculate the gradients can lead to cases of over fitting, using only a small batch every time produces slightly different kinds of gradients each time which helps escape local minima.
+    c) GD tends to converge quicker than SGD since one step of GD can take SGD many steps to catch up to.
+    
+3.) One of the main challenges of Deep learning is that loss functions tend have many local minimas and models tend to have millions of parameters.
+    SGD is more fit to deal with those challenges for the following reasons:
+    
+    a) Datasets in deep learning are huge and loading them into memory for computation is infeasible.
+    b) Calculating a step of SGD is much faster than GD because of the small batch size.
+    c) SGD is better at escaping local minima which is crucial due to the landscape of losses in Deep learning.
+    
+4.) A.) Yes, this would yield a method equivalent to GD.
+        The reason for these 2 methods being equivalent is that the loss computed in each forward pass is a sum of the losses of each seperate sample and so we get that
+        from the linearity of the gradient, the gradient of the sum of the losses is the sum of the gradients of the losses which again can be further broken down into each sample.
+        Once broken down into each sample we get precisely the step of GD as required.
 
+    B.) The reason we got a memory error is that even though we are not saving the entire dataset in memory, we need to save the input for each layer in order to use it in the backward pass to compute gradients.
+        This means that the dataset is being saved implicitly in memory even if it wasn't our intention.
+    
 
 
 
@@ -158,7 +217,10 @@ def part3_optim_hp():
 
 part3_q1 = r"""
 **Your answer:**
-
+1.) We see in the graphs that the test loss was quite low and then it increased, stopping at the point at which it was smaller would yield a lower optimization error.
+2.) We see that the final distance between the test accuracy and the train accuracy is quite high which yields a high generalization error.
+3.) The original dataset includes noise which is an error that is independent of the choice of model as well a difference in rotation between the 3 datasets which is something that mlps cannot properly model.
+    This means that MLPS will have trouble learning the optimal classifier which leads to a high approximation error.
 
 
 
@@ -166,6 +228,11 @@ part3_q1 = r"""
 
 part3_q2 = r"""
 **Your answer:**
+According to the way data is generated, we generate 4000 samples with degree 10 and then 4000 sample with degree 50.
+Because we do not shuffle, we get that the train set gets all the degree 10 samples as well as some of the degree 50 samples.
+Specifically all degree 50 samples in the train set are of the same kind which leads to an imbalance in the validation set.
+As we see in the confusion matrix, there is a much bigger chance for a true negative than a true positive.
+This leads to the model focusing more on negative samples and less on positive samples whioch would lead to a high FNR as we see in the matrix.
 
 
 
@@ -174,17 +241,30 @@ part3_q2 = r"""
 
 part3_q3 = r"""
 **Your answer:**
+1.) In this case a false positive of our model leads to a healthy person getting an expansive and unnecessary test.
+    A false negative would lead to a person getting non-lethal symptoms and then a low cost cure.
+    In this case a FP is worse than a FN and so we would choose the optimal point such that it prioritizes a low FPR over a low FNR.
 
-
-
+2.) In this case a FP would still lead to an unnecessary expense but a FN could lead to death.
+    Because of that, we want to ensure a low FN rate and so we would choose a point on the ROC curve that ensures a low FNR while trying to minimize the FPR.
 
 """
 
 
 part3_q4 = r"""
 **Your answer:**
+1.) We see that for all of the models, the decision boundaries get sharper and fit the data better.
+    We also see that the performance on both datasets improves but that the model overfits more as the width grows.
 
+2.) With the depth we see similar results as to those with the width but with one significant difference:
+    changing the depth leads to a much more expressive model than changing the width and as such the changes here are more profound than before.
+    
+3.) Even though deeper models are much more expressive than wider models with the same number of neurons, they are much harder  and so we see that the deeper model gets slightly worse results.
 
+4.) As we explained before, the validation set is not balanced between the samples while the test set is.
+    This means that using a default threshold would lead to a high error rate from the shift in distribution.
+    Changing the threshold makes the model invariant to this imbalance which greatly increases generaliztion.
+    
 
 
 """
