@@ -319,7 +319,10 @@ but we can also see that after adding too much architecture complexity, the netw
 """
 
 part5_q4 = r"""
-**Your answer:**
+We can see that the model was not trainable with K=32, our guess is that it might be because of the momentum and that
+we jump between local minimas.
+We can see that for L=2 and k=[64, 128, 256] the model was trainable and for L=4 and L=8, it wasnt. we balieve it for
+the same reasons as the previous experiments.
 
 
 

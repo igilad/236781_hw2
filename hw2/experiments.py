@@ -61,8 +61,6 @@ def mlp_experiment(
     model.threshold = thresh
 
     test_acc = trainer.test_epoch(dl_test, verbose=False)[1]
-
-
     # ========================
     return model, thresh, valid_acc, test_acc
 
