@@ -404,9 +404,6 @@ we jump between local minimas.
 We can see that for L=2 and k=[64, 128, 256] the model was trainable and for L=4 and L=8, it wasnt. we balieve it for
 the same reasons as the previous experiments.
 
-
-
-
 """
 
 
